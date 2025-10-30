@@ -1,63 +1,90 @@
+import torch
+from torch import nn
 import numpy as np
 import matplotlib.pyplot as plt
 
-# --- 1. Defini��o da Fun��o e do Gradiente ---
+import pathlib
 
-# Constante 'c' (que combina infecciosidade do pat�geno, etc.)
-# Voc� pode mudar esse valor para ver como afeta o gr�fico.
-c = 1.0
+# Create a directory for saving images
+image_dir = pathlib.Path("images/movie_images")
+image_dir.mkdir(parents=True, exist_ok=True)
 
-# Define a fun��o C(I, E)
-def C(I, E):
-    return (c * E) / I
 
-# Define os componentes do gradiente
-# Componente dC/dI (dire��o I)
-def dC_dI(I, E):
-    return (-c * E) / (I**2)
+class LinearRegressionModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.weights = nn.Parameter(torch.randn(1))
+        self.bias = nn.Parameter(torch.randn(1))
 
-# Componente dC/dE (dire��o E)
-def dC_dE(I, E):
-    return c / I
+    def forward(self, x):
+        return x * self.weights + self.bias
 
-# --- 2. Prepara��o da Grade (Grid) ---
 
-# Define os intervalos para Imunidade (I) e Exposi��o (E)
-# NOTA: Come�amos I de um valor pequeno > 0 para evitar divis�o por zero.
-i_range = np.linspace(0.5, 5.0, 20)  # Imunidade de 0.5 a 5.0
-e_range = np.linspace(0.5, 5.0, 20)  # Exposi��o de 0.5 a 5.0
 
-# Cria a grade de pontos 2D
-I, E = np.meshgrid(i_range, e_range)
+weight = 10
+bias = 5
+start = 0
+end = 10
+step = 0.01
 
-# --- 3. C�lculo da Fun��o e do Gradiente na Grade ---
+X = torch.arange(start, end, step).unsqueeze(dim=1)
+y = weight*X + bias
 
-# Calcula a chance de infec��o Z (eixo z) em cada ponto da grade
-Z_chance = C(I, E)
+# creating a train/test split
 
-# Calcula os componentes U (eixo x) e V (eixo y) do gradiente em cada ponto
-U_grad = dC_dI(I, E)
-V_grad = dC_dE(I, E)
+train_split = int(0.8 * len(X))
+X_train, X_test = X[:train_split], X[train_split:]
+y_train, y_test = y[:train_split], y[train_split:]
 
-# --- 4. Normaliza��o dos Vetores (Para melhor visualiza��o) ---
-# O gradiente explode perto de I=0. Normalizamos os vetores (mudamos
-# seu comprimento para 1) para focar apenas na DIRE��O.
-magnitude = np.sqrt(U_grad**2 + V_grad**2)
-U_norm = U_grad / magnitude
-V_norm = V_grad / magnitude
+def plt_predictions(train_data=X_train,
+                    train_label=y_train,
+                    test_data=X_test,
+                    test_label=y_test,
+                    save_path="predictions.png",
+                    predictions=None):
+    plt.figure(figsize=(10, 7))
+    plt.scatter(train_data, train_label, c="b", s=4, label="Training data")
+    plt.scatter(test_data, test_label, c="g", s=4, label="Testing data")
+    if predictions is not None:
+        plt.scatter(test_data, predictions, c="r", s=4, label="Predictions")
+    plt.legend(prop={"size": 14})
+    plt.savefig(save_path)
 
-# --- 5. Gera��o do Gr�fico ---
 
-print("Gerando o gr�fico...")
+# 
+loss_fn = nn.L1Loss()
+torch.manual_seed(42)
+model = LinearRegressionModel()
+optimizer = torch.optim.SGD(params=model.parameters(), lr=0.01)
+# 
 
-plt.figure(figsize=(12, 9))
+print(optimizer)
 
-# 5a. Plot das Curvas de N�vel (Mapa de Calor)
-# Isso mostra o valor da fun��o C(I, E)
-# 'inferno' � um bom mapa de cores: amarelo = ALTO risco, preto = BAIXO risco
-contour = plt.contourf(I, E, Z_chance, levels=25, cmap='inferno', alpha=0.8)
-plt.colorbar(contour, label='C (Chance de Infec��o)')
-plt.savefig('veremos.png')
+def train_model(model, epochs, graph_movie=False):
+    epochs_count = []
+    loss_values = []
+    for epoch in range(epochs):
+        model.train()
+        y_pred = model(X_train)
+        loss = loss_fn(y_pred, y_train)
 
-# 5b. Plot do Campo Vetorial (Setas do Gradiente)
-# Sobrep�e as
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        model.eval()
+        with torch.inference_mode():
+            y_test_pred = model(X_test)
+            test_loss = loss_fn(y_test_pred, y_test)
+
+        if epoch % 5 == 0:
+            epochs_count.append(epoch)
+            loss_values.append(loss.item())
+            print(f"Epoch: {epoch} | Loss: {loss.item():.4f} | Test Loss: {test_loss.item():.4f}")
+
+            if graph_movie:
+                plt_predictions(predictions=model(X_test).detach(), save_path=image_dir / f"epoch_{epoch}.png")
+
+    return epochs_count, loss_values, test_loss.item()
+
+train_model(model, 500, graph_movie=True)
