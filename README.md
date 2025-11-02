@@ -112,17 +112,4 @@ vlc training_evolution.mp4
 
 **Note**: The video displays the model's predictions improving frame-by-frame as it learns the underlying linear relationship.
 
-## 🔍 Deep Dive: Video Generation Implementation
-
-The video generation automatically:
-
-1. **Discovers** all epoch images in the specified directory
-2. **Orders** images numerically using natural sorting (epoch_000 → epoch_950)
-3. **Reads** each image using OpenCV
-4. **Writes** frames to an MP4 file with your specified framerate
-5. **Reports** progress at regular intervals
-
-*Image naming convention matters when using fpmeg:*
-- ✅ Correct: `epoch_000.png`, `epoch_001.png`, `epoch_010.png`
-- ❌ Incorrect: `epoch_0.png`, `epoch_1.png` (may sort incorrectly)
 
