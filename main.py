@@ -77,14 +77,15 @@ def train_model(model, epochs, graph_movie=False):
             y_test_pred = model(X_test)
             test_loss = loss_fn(y_test_pred, y_test)
 
-        if epoch % 5 == 0:
+        if epoch % 100 == 0:
             epochs_count.append(epoch)
             loss_values.append(loss.item())
             print(f"Epoch: {epoch} | Loss: {loss.item():.4f} | Test Loss: {test_loss.item():.4f}")
 
-            if graph_movie:
-                plt_predictions(predictions=model(X_test).detach(), save_path=image_dir / f"epoch_{epoch}.png")
+        if graph_movie:
+            epoch_formatted = f"{epoch:03d}"
+            plt_predictions(predictions=model(X_test).detach(), save_path=image_dir / f"epoch_{epoch_formatted}.png")
 
     return epochs_count, loss_values, test_loss.item()
 
-train_model(model, 500, graph_movie=True)
+train_model(model, 950, graph_movie=True)
