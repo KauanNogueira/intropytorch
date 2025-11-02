@@ -6,6 +6,8 @@ A comprehensive introduction to PyTorch fundamentals through linear regression, 
 
 This project demonstrates core PyTorch concepts by implementing a **custom linear regression model from scratch**. It includes mechanisms for visualizing model predictions at each training epoch. This was a great thing to do because of graph visualization. I also plan to make neural network visualization in 3D, so that I can learn more about that too
 
+![Model Training Visualization](assets/output.mp4)
+
 ## ✨ Features
 
 - **Custom Linear Regression Model**: Built entirely with PyTorch's `nn.Module`
